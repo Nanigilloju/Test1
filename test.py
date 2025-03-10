@@ -1,63 +1,52 @@
-df = pd.read_csv("university_student_dashboard_data.csv")
+data = pd.read_csv("university_student_dashboard_data.csv")
 
-# Title
-st.title("University Student Dashboard \U0001F393📊")
+# Title of the dashboard
+st.title("University Admissions, Retention, and Satisfaction Dashboard")
 
-# Sidebar Filters
+# Sidebar for filters
 st.sidebar.header("Filters")
-selected_term = st.sidebar.selectbox("Select Term", df["Term"].unique())
-selected_year = st.sidebar.slider("Select Year", int(df["Year"].min()), int(df["Year"].max()), int(df["Year"].max()))
+selected_year = st.sidebar.selectbox("Select Year", data['Year'].unique())
+selected_term = st.sidebar.selectbox("Select Term", data['Term'].unique())
 
-# Filter data
-filtered_df = df[(df["Term"] == selected_term) & (df["Year"] == selected_year)]
+# Filter data based on selection
+filtered_data = data[(data['Year'] == selected_year) & (data['Term'] == selected_term)]
 
-# KPIs
-st.subheader("Key Metrics")
-total_apps = filtered_df["Applications"].sum()
-total_admissions = filtered_df["Admitted"].sum()
-total_enrollments = filtered_df["Enrolled"].sum()
-retention_rate = filtered_df["Retention Rate (%)"].mean()
-satisfaction_score = filtered_df["Student Satisfaction (%)"].mean()
+# Display key metrics
+st.header("Key Metrics")
+col1, col2, col3 = st.columns(3)
+col1.metric("Total Applications", filtered_data['Applications'].sum())
+col2.metric("Total Admitted", filtered_data['Admitted'].sum())
+col3.metric("Total Enrolled", filtered_data['Enrolled'].sum())
 
-st.metric("Total Applications", total_apps)
-st.metric("Total Admissions", total_admissions)
-st.metric("Total Enrollments", total_enrollments)
-st.metric("Avg Retention Rate", f"{retention_rate:.2f}%")
-st.metric("Avg Satisfaction Score", f"{satisfaction_score:.2f}%")
+# Retention Rate and Satisfaction
+st.header("Retention and Satisfaction")
+fig1 = px.line(data, x='Year', y='Retention Rate (%)', color='Term', title='Retention Rate Over Time')
+st.plotly_chart(fig1)
 
-# Enrollment by Department
-st.subheader("Enrollment Breakdown by Department")
-dept_counts = filtered_df[["Engineering Enrolled", "Business Enrolled", "Arts Enrolled", "Science Enrolled"]].sum()
-fig, ax = plt.subplots(figsize=(8, 4))
-dept_counts.plot(kind="bar", color=["skyblue", "orange", "green", "purple"], ax=ax)
-plt.xticks(rotation=45)
-plt.xlabel("Department")
-plt.ylabel("Enrollments")
-plt.title("Enrollments by Department")
-st.pyplot(fig)
+fig2 = px.line(data, x='Year', y='Student Satisfaction (%)', color='Term', title='Student Satisfaction Over Time')
+st.plotly_chart(fig2)
 
-# Retention Rate Trends
-st.subheader("Retention Rate Over Time")
-fig, ax = plt.subplots(figsize=(8, 4))
-sns.lineplot(data=df, x="Year", y="Retention Rate (%)", hue="Term", marker="o", ax=ax)
-plt.xlabel("Year")
-plt.ylabel("Retention Rate (%)")
-plt.title("Retention Rate Trends Over Time")
-st.pyplot(fig)
+# Departmental Enrollment
+st.header("Departmental Enrollment")
+department_data = filtered_data.melt(
+    id_vars=['Year', 'Term'], 
+    value_vars=['Engineering Enrolled', 'Business Enrolled', 'Arts Enrolled', 'Science Enrolled'], 
+    var_name='Department', 
+    value_name='Students Enrolled'  # Changed value_name to avoid conflict
+)
+fig3 = px.bar(department_data, x='Department', y='Students Enrolled', color='Department', title='Enrollment by Department')
+st.plotly_chart(fig3)
 
-# Satisfaction Score Comparison
-st.subheader("Satisfaction Score: Spring vs Fall")
-fig, ax = plt.subplots(figsize=(8, 4))
-sns.boxplot(data=df, x="Term", y="Student Satisfaction (%)", ax=ax)
-plt.xlabel("Term")
-plt.ylabel("Satisfaction Score (%)")
-plt.title("Comparison of Student Satisfaction (Spring vs Fall)")
-st.pyplot(fig)
+# Spring vs. Fall Comparison
+st.header("Spring vs. Fall Comparison")
+term_comparison = data.groupby(['Year', 'Term']).agg({'Applications': 'sum', 'Admitted': 'sum', 'Enrolled': 'sum', 'Retention Rate (%)': 'mean', 'Student Satisfaction (%)': 'mean'}).reset_index()
+fig4 = px.bar(term_comparison, x='Year', y='Applications', color='Term', barmode='group', title='Applications: Spring vs. Fall')
+st.plotly_chart(fig4)
 
-# Conclusion
-st.write("### Key Findings & Insights")
-st.write("- Enrollment trends vary by department, with Engineering and Business leading.")
-st.write("- Retention rates have been improving over the years.")
-st.write("- Students report slightly higher satisfaction in Fall compared to Spring.")
-
-# Run this script using: `streamlit run script.py`
+# Key Insights
+st.header("Key Insights")
+st.write("""
+- **Engineering** has the highest enrollment compared to other departments.
+- **Retention rates** have been steadily increasing over the years.
+- **Student satisfaction** is slightly higher in Fall terms compared to Spring terms.
+""")
