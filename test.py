@@ -1,3 +1,7 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+
 # Loading dataset
 data = pd.read_csv("university_student_dashboard_data.csv")
 
